@@ -11,6 +11,8 @@ import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
+import { CartItemsModule } from './cart-items/cart-items.module';
+import { OrderItemsModule } from './order-items/order-items.module';
 
 @Module({
   imports: [
@@ -27,7 +29,7 @@ import { PaymentsModule } from './payments/payments.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    UsersModule, AuthModule, StoresModule, CategoriesModule, ProductsModule, CartModule, OrdersModule, PaymentsModule],
+    UsersModule, AuthModule, StoresModule, CategoriesModule, ProductsModule, CartModule, OrdersModule, PaymentsModule, CartItemsModule, OrderItemsModule],
   controllers: [AppController],
   providers: [AppService],
 })
