@@ -14,10 +14,10 @@ NestJS + TypeORM + PostgreSQL backend powering the Fresh Grocery platform: custo
 
 | App | Description |
 |---|---|
-| [grocery_frontend_customer](../../grocery_frontend_customer) | Customer-facing shopping app (Flutter) |
-| [grocery_frontend_store](../../grocery_frontend_store) | Store/partner management app (Flutter) |
-| [grocery_frontend_rider](../../grocery_frontend_rider) | Rider delivery app (Flutter) |
-| [grocery_frontend_admin](../../grocery_frontend_admin) | Admin console (Flutter) |
+| [grocery_frontend_customer](../../../grocery_frontend_customer) | Customer-facing shopping app (Flutter) |
+| [grocery_frontend_store](../../../grocery_frontend_store) | Store/partner management app (Flutter) |
+| [grocery_frontend_rider](../../../grocery_frontend_rider) | Rider delivery app (Flutter) |
+| [grocery_frontend_admin](../../../grocery_frontend_admin) | Admin console (Flutter) |
 
 ## Features
 
