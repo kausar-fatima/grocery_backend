@@ -25,9 +25,17 @@ export class Payment {
     amount!: number;
 
     @Column({
+        default: 'USD',
+    })
+    currency!: string;
+
+    @Column({
         nullable: true,
     })
     transactionId!: string;
+
+    @Column({ nullable: true, unique: true })
+    paymentIntentId!: string; // new — correlates webhook events back to this row
 
     @OneToOne(
         () => Order,

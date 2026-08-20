@@ -1,6 +1,7 @@
 import {
-    IsString,
     IsNumber,
+    IsOptional,
+    IsString,
 } from 'class-validator';
 
 export class CreateStoreDto {
@@ -15,4 +16,20 @@ export class CreateStoreDto {
 
     @IsNumber()
     ownerId!: number;
+
+    @IsOptional()
+    @IsNumber()
+    latitude?: number;
+
+    @IsOptional()
+    @IsNumber()
+    longitude?: number;
+
+    @IsOptional()
+    @IsString()
+    opensAt?: string;
+
+    @IsOptional()
+    @IsString()
+    closesAt?: string;
 }

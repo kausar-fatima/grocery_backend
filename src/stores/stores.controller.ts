@@ -6,11 +6,17 @@ import {
     Delete,
     Param,
     Body,
+    UseGuards,
 } from '@nestjs/common';
 
 import { StoresService } from './stores.service';
 
 import { CreateStoreDto } from './dto/create-store.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { UserRole } from 'src/common/enums/user_role.enum';
 
 @Controller('stores')
 export class StoresController {
@@ -18,6 +24,8 @@ export class StoresController {
         private storesService: StoresService,
     ) { }
 
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.STORE_OWNER, UserRole.ADMIN)
     @Post()
     create(
         @Body()
@@ -31,6 +39,12 @@ export class StoresController {
     @Get()
     findAll() {
         return this.storesService.findAll();
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('owner/mine')
+    myStores(@CurrentUser('sub') ownerId: number) {
+        return this.storesService.findByOwner(ownerId);
     }
 
     @Get(':id')

@@ -40,6 +40,64 @@ export class Order {
     })
     totalAmount!: number;
 
+    // Delivery details captured at checkout (nullable, added for the
+    // customer app so orders can show a destination and be tracked).
+    @Column({ nullable: true })
+    address!: string;
+
+    @Column({ nullable: true })
+    shippingMethod!: string;
+
+    @Column({
+        type: 'decimal',
+        default: 0,
+    })
+    deliveryFee!: number;
+
+    // Promotional discount applied to the subtotal at checkout.
+    @Column({
+        type: 'decimal',
+        precision: 10,
+        scale: 2,
+        default: 0,
+    })
+    discountAmount!: number;
+
+    @Column({ type: 'varchar', nullable: true })
+    promoTitle!: string | null;
+
+    // --- Delivery / rider tracking ---
+    @ManyToOne(() => User, { nullable: true, eager: false })
+    @JoinColumn({ name: 'riderId' })
+    rider!: User | null;
+
+    @Column({ type: 'int', nullable: true })
+    riderId!: number | null;
+
+    // Live rider position, updated while the order is out for delivery.
+    @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+    riderLat!: number | null;
+
+    @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+    riderLng!: number | null;
+
+    // Pickup (store) location, captured at order time.
+    @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+    storeLat!: number | null;
+
+    @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+    storeLng!: number | null;
+
+    // Delivery destination (customer's chosen address).
+    @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+    destLat!: number | null;
+
+    @Column({ type: 'decimal', precision: 10, scale: 6, nullable: true })
+    destLng!: number | null;
+
+    @Column({ type: 'timestamp', nullable: true })
+    deliveredAt!: Date | null;
+
     @OneToOne(
         () => Payment,
         payment => payment.order,

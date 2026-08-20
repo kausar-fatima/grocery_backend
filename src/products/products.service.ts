@@ -59,6 +59,7 @@ export class ProductsService {
                 description: dto.description,
                 price: dto.price,
                 stock: dto.stock,
+                image: dto.image,
                 store,
                 category,
             });
@@ -74,6 +75,14 @@ export class ProductsService {
                 'store',
                 'category',
             ],
+        });
+    }
+
+    async findByStore(storeId: number) {
+        return await this.productRepository.find({
+            where: { store: { id: storeId } },
+            relations: ['store', 'category'],
+            order: { createdAt: 'DESC' },
         });
     }
 

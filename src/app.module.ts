@@ -13,6 +13,13 @@ import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CartItemsModule } from './cart-items/cart-items.module';
 import { OrderItemsModule } from './order-items/order-items.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { MessagesModule } from './messages/messages.module';
+import { CallsModule } from './calls/calls.module';
+import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { AddressesModule } from './addresses/addresses.module';
+import { PromotionsModule } from './promotions/promotions.module';
 
 @Module({
   imports: [
@@ -29,7 +36,7 @@ import { OrderItemsModule } from './order-items/order-items.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    UsersModule, AuthModule, StoresModule, CategoriesModule, ProductsModule, CartModule, OrdersModule, PaymentsModule, CartItemsModule, OrderItemsModule],
+    UsersModule, AuthModule, StoresModule, CategoriesModule, ProductsModule, CartModule, OrdersModule, PaymentsModule, CartItemsModule, OrderItemsModule, ReviewsModule, MessagesModule, CallsModule, AdminModule, NotificationsModule, AddressesModule, PromotionsModule],
   controllers: [AppController],
   providers: [AppService],
 })

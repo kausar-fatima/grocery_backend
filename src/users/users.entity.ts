@@ -1,3 +1,4 @@
+import { Exclude } from 'class-transformer';
 import { Cart } from 'src/cart/cart.entity';
 import { UserRole } from 'src/common/enums/user_role.enum';
 import { Order } from 'src/orders/orders.entity';
@@ -15,6 +16,7 @@ export class User {
     @Column({unique: true})
     email!: string;
 
+    @Exclude()
     @Column()
     password!: string;
 
@@ -30,6 +32,9 @@ export class User {
 
     @Column({ default: false })
     isApproved!: boolean;
+
+    @Column({ default: false })
+    isSoftDeleted!: boolean;
 
     @CreateDateColumn()
     createdAt!: Date;
@@ -54,4 +59,14 @@ export class User {
         order => order.user,
     )
     orders!: Order[];
+
+    @Column({
+        nullable: true,
+    })
+    passwordResetToken!: string;
+
+    @Column({
+        nullable: true,
+    })
+    passwordResetExpires!: Date;
 }

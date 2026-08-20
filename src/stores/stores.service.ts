@@ -41,6 +41,10 @@ export class StoresService {
                 name: dto.name,
                 address: dto.address,
                 phone: dto.phone,
+                latitude: dto.latitude ?? null,
+                longitude: dto.longitude ?? null,
+                opensAt: dto.opensAt ?? null,
+                closesAt: dto.closesAt ?? null,
                 owner,
             });
 
@@ -56,6 +60,13 @@ export class StoresService {
                 'categories',
                 'products',
             ],
+        });
+    }
+
+    async findByOwner(ownerId: number) {
+        return await this.storeRepository.find({
+            where: { owner: { id: ownerId } },
+            relations: ['categories', 'products'],
         });
     }
 

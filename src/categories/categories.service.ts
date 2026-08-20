@@ -58,6 +58,13 @@ export class CategoriesService {
         });
     }
 
+    async findByStore(storeId: number) {
+        return await this.categoryRepository.find({
+            where: { store: { id: storeId } },
+            relations: ['products'],
+        });
+    }
+
     async findOne(id: number) {
         const category =
             await this.categoryRepository.findOne({

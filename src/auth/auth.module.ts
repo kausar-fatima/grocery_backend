@@ -7,10 +7,14 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtStrategy } from './jwt.strategy';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
+
+    NotificationsModule,
 
     PassportModule,
 
@@ -46,6 +50,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
   providers: [
     AuthService,
+    JwtStrategy,
   ],
 })
 export class AuthModule { }

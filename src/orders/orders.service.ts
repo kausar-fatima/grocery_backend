@@ -6,7 +6,7 @@ import {
 
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { DataSource } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
 
 import { Repository } from 'typeorm';
 
@@ -18,6 +18,10 @@ import { OrderStatus } from '../common/enums/order_status.enum';
 import { Cart } from 'src/cart/cart.entity';
 import { CartItem } from 'src/cart-items/cart-item.entity';
 import { CreateOrderDto } from './dto/create_order.dto';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { Store } from 'src/stores/stores.entity';
+import { PromotionsService } from 'src/promotions/promotions.service';
+import { DeliverySimulationService } from './delivery-simulation.service';
 
 @Injectable()
 export class OrdersService {
@@ -27,11 +31,28 @@ export class OrdersService {
         private orderRepository: Repository<Order>,
 
         private dataSource: DataSource,
+
+        private notifications: NotificationsService,
+
+        private promotions: PromotionsService,
+
+        private simulation: DeliverySimulationService,
     ) { }
+
+    /** Road route (store → destination) the rider follows, for the map. */
+    getRoute(orderId: number) {
+        return this.simulation.getRoute(orderId);
+    }
 
     async create(dto: CreateOrderDto) {
 
-        return this.dataSource.transaction(async manager => {
+        let storeOwnerId: number | null = null;
+
+        // Determine the active promotion for this user up-front (before the new
+        // order exists, so `firstOrderOnly` sees the correct prior count).
+        const promo = await this.promotions.activeForUser(dto.userId);
+
+        const order = await this.dataSource.transaction(async manager => {
 
             const user = await manager.findOne(User, {
                 where: {
@@ -65,6 +86,8 @@ export class OrdersService {
                 },
                 relations: [
                     "product",
+                    "product.store",
+                    "product.store.owner",
                 ]
             });
 
@@ -74,9 +97,33 @@ export class OrdersService {
                 );
             }
 
+            const store = cartItems[0]?.product?.store;
+            storeOwnerId = store?.owner?.id ?? null;
+
+            // Block ordering from a store that is currently closed.
+            if (
+                store &&
+                !Store.computeOpen(store.opensAt, store.closesAt)
+            ) {
+                const hours =
+                    store.opensAt && store.closesAt
+                        ? ` (open ${store.opensAt}–${store.closesAt})`
+                        : '';
+                throw new BadRequestException(
+                    `${store.name} is currently closed${hours}.`,
+                );
+            }
+
             const order = manager.create(Order, {
                 user,
                 status: OrderStatus.ACCEPTED,
+                address: dto.address,
+                shippingMethod: dto.shippingMethod,
+                deliveryFee: dto.deliveryFee ?? 0,
+                storeLat: store?.latitude ?? null,
+                storeLng: store?.longitude ?? null,
+                destLat: dto.destLat ?? null,
+                destLng: dto.destLng ?? null,
             });
 
             await manager.save(order);
@@ -85,6 +132,13 @@ export class OrdersService {
 
             for (const cartItem of cartItems) {
                 const product = cartItem.product;
+                if (product.isAvailable === false) {
+
+                    throw new BadRequestException(
+                        `${product.name} is currently unavailable`
+                    );
+
+                }
                 if (product.stock < cartItem.quantity) {
 
                     throw new BadRequestException(
@@ -111,7 +165,12 @@ export class OrdersService {
                 });
                 await manager.save(orderItem);
             }
-            order.totalAmount = total
+            // Apply the promotional discount to the item subtotal.
+            const discount = this.promotions.computeDiscount(total, promo);
+            order.discountAmount = discount;
+            order.promoTitle = discount > 0 ? (promo?.title ?? null) : null;
+            order.totalAmount =
+                Math.max(0, total - discount) + Number(dto.deliveryFee ?? 0);
 
             await manager.save(order);
 
@@ -134,6 +193,25 @@ export class OrdersService {
 
         });
 
+        if (order) {
+            await this.notifications.create(order.user.id, {
+                title: 'Order placed 🎉',
+                body: `Your order #${order.id} has been placed successfully. We'll notify you as it progresses.`,
+                type: 'order',
+                orderId: order.id,
+            });
+            if (storeOwnerId) {
+                await this.notifications.create(storeOwnerId, {
+                    title: 'New order received 🛒',
+                    body: `You have a new order #${order.id} to prepare.`,
+                    type: 'order',
+                    orderId: order.id,
+                });
+            }
+        }
+
+        return order;
+
     }
 
     async findAll() {
@@ -145,6 +223,7 @@ export class OrdersService {
                 "items",
                 "items.product",
                 "payment",
+                "rider",
             ],
 
             order: {
@@ -168,6 +247,7 @@ export class OrdersService {
                     "items",
                     "items.product",
                     "payment",
+                    "rider",
                 ],
 
             });
@@ -226,6 +306,7 @@ export class OrdersService {
                     },
 
                     relations: [
+                        "user",
                         "items",
                         "items.product",
                     ],
@@ -257,11 +338,153 @@ export class OrdersService {
 
             order.status = status;
 
+            if (status === OrderStatus.DELIVERED) {
+                order.deliveredAt = new Date();
+            }
+
             await manager.save(order);
 
             return order;
 
+        }).then(async (order) => {
+            // Drive/stop the live rider simulation as the order moves.
+            if (order.status === OrderStatus.ON_THE_WAY) {
+                await this.simulation.start(order.id);
+            } else if (
+                order.status === OrderStatus.DELIVERED ||
+                order.status === OrderStatus.CANCELLED
+            ) {
+                this.simulation.stop(order.id);
+            }
+            await this.notifications.create(order.user.id, {
+                title: 'Order update',
+                body: `Your order #${order.id} is now "${this.statusLabel(order.status)}".`,
+                type: 'status',
+                orderId: order.id,
+            });
+            return order;
         });
 
+    }
+
+    private statusLabel(status: OrderStatus): string {
+        switch (status) {
+            case OrderStatus.ACCEPTED: return 'Accepted';
+            case OrderStatus.PREPARING: return 'Preparing';
+            case OrderStatus.READY: return 'Ready for pickup';
+            case OrderStatus.PICKED_UP: return 'Picked up';
+            case OrderStatus.ON_THE_WAY: return 'On the way';
+            case OrderStatus.DELIVERED: return 'Delivered';
+            case OrderStatus.CANCELLED: return 'Cancelled';
+            default: return status;
+        }
+    }
+
+    // --- Customer scoped ---
+    async findForUser(userId: number) {
+        return this.orderRepository.find({
+            where: { user: { id: userId } },
+            relations: ['items', 'items.product', 'payment', 'rider'],
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    // --- Rider flows ---
+
+    /** Orders a store marked READY and that no rider has claimed. When the
+     *  rider's location is provided, only orders whose pickup (store) is
+     *  within [radiusKm] are returned, nearest first — so a rider only sees
+     *  jobs near them. */
+    async availableForRider(lat?: number, lng?: number, radiusKm = 15) {
+        const orders = await this.orderRepository.find({
+            where: { status: OrderStatus.READY, riderId: IsNull() },
+            relations: ['user', 'items', 'items.product'],
+            order: { createdAt: 'ASC' },
+        });
+
+        if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) {
+            return orders;
+        }
+
+        return orders
+            .filter((o) => o.storeLat != null && o.storeLng != null)
+            .map((o) => ({
+                order: o,
+                distance: this.distanceKm(
+                    lat,
+                    lng,
+                    Number(o.storeLat),
+                    Number(o.storeLng),
+                ),
+            }))
+            .filter((x) => x.distance <= radiusKm)
+            .sort((a, b) => a.distance - b.distance)
+            .map((x) => x.order);
+    }
+
+    private distanceKm(
+        lat1: number,
+        lng1: number,
+        lat2: number,
+        lng2: number,
+    ): number {
+        const R = 6371;
+        const toRad = (d: number) => (d * Math.PI) / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) *
+                Math.cos(toRad(lat2)) *
+                Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    async findForRider(riderId: number) {
+        return this.orderRepository.find({
+            where: { riderId },
+            relations: ['user', 'items', 'items.product', 'payment'],
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    async assignRider(orderId: number, riderId: number) {
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+        });
+        if (!order) throw new NotFoundException('Order not found');
+        if (order.riderId && order.riderId !== riderId) {
+            throw new BadRequestException('Order already assigned to a rider');
+        }
+        order.riderId = riderId;
+        order.status = OrderStatus.PICKED_UP;
+        await this.orderRepository.save(order);
+        const full = await this.findOne(orderId);
+        if (full?.user?.id) {
+            await this.notifications.create(full.user.id, {
+                title: 'A rider is on the way 🛵',
+                body: `${full.rider?.username ?? 'A rider'} has picked up your order #${orderId}.`,
+                type: 'rider',
+                orderId,
+            });
+        }
+        await this.notifications.create(riderId, {
+            title: 'Delivery assigned',
+            body: `You accepted order #${orderId}. Head to the store for pickup.`,
+            type: 'rider',
+            orderId,
+        });
+        return full;
+    }
+
+    async updateLocation(orderId: number, lat: number, lng: number) {
+        const order = await this.orderRepository.findOne({
+            where: { id: orderId },
+        });
+        if (!order) throw new NotFoundException('Order not found');
+        order.riderLat = lat;
+        order.riderLng = lng;
+        await this.orderRepository.save(order);
+        return { message: 'Location updated', riderLat: lat, riderLng: lng };
     }
 }

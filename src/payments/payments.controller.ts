@@ -1,16 +1,22 @@
 import {
+    BadRequestException,
     Body,
     Controller,
+    Headers,
     Delete,
     Get,
     Param,
     Patch,
     Post,
+    Req,
 } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
 
 import { PaymentsService } from './payments.service';
 
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { CreateCodPaymentDto } from './dto/create-cod-payment.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -18,6 +24,27 @@ export class PaymentsController {
         private readonly paymentsService:
             PaymentsService,
     ) { }
+
+    @Post('create-intent')
+    createIntent(@Body() dto: CreatePaymentIntentDto) {
+        return this.paymentsService.createPaymentIntent(dto);
+    }
+
+    @Post('webhook')
+    handleWebhook(
+        @Req() req: RawBodyRequest<Request>,
+        @Headers('stripe-signature') signature: string,
+    ) {
+        if (!signature) {
+            throw new BadRequestException('Missing stripe-signature header');
+        }
+        return this.paymentsService.handleStripeWebhook(req.rawBody!, signature);
+    }
+
+    @Post('cod')
+    createCod(@Body() dto: CreateCodPaymentDto) {
+        return this.paymentsService.createCashOnDelivery(dto);
+    }
 
     @Post()
     create(
