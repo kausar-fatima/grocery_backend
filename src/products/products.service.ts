@@ -12,6 +12,7 @@ import { Store } from '../stores/stores.entity';
 import { Category } from '../categories/categories.entity';
 
 import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -107,16 +108,13 @@ export class ProductsService {
 
     async update(
         id: number,
-        body: Partial<Product>,
+        dto: UpdateProductDto,
     ) {
-        const product =
-            await this.findOne(id);
+        const product = await this.findOne(id);
 
-        Object.assign(product, body);
+        Object.assign(product, dto);
 
-        return await this.productRepository.save(
-            product,
-        );
+        return await this.productRepository.save(product);
     }
 
     async remove(id: number) {

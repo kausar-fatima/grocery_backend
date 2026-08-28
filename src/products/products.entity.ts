@@ -26,7 +26,12 @@ export class Product {
     @Column('text')
     description!: string;
 
-    @Column('decimal')
+    @Column('decimal', {
+        transformer: {
+            to: (value: number) => value,
+            from: (value: string) => parseFloat(value),
+        },
+    })
     price!: number;
 
     @Column()

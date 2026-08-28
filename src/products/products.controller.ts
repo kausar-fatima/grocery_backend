@@ -16,6 +16,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/common/enums/user_role.enum';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Controller('products')
 export class ProductsController {
@@ -48,10 +49,12 @@ export class ProductsController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.STORE_OWNER, UserRole.ADMIN)
     @Patch(':id')
-    update(@Param('id') id: string, @Body() body: any) {
-        return this.productsService.update(+id, body);
+    update(
+        @Param('id') id: string,
+        @Body() dto: UpdateProductDto,
+    ) {
+        return this.productsService.update(+id, dto);
     }
-
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.STORE_OWNER, UserRole.ADMIN)
     @Delete(':id')
