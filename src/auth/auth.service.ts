@@ -134,8 +134,9 @@ export class AuthService {
         await this.usersRepository.save(user);
 
         return {
-            message:
-                'Store owner approved or declined.',
+            message: user.isApproved
+                ? 'Store owner approved.'
+                : 'Store owner revoked and logged out.',
         };
     }
 
