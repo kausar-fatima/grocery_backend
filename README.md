@@ -1,98 +1,116 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+<!--
+  ASSUMPTIONS (adjust if wrong):
+  - Repo name: grocery-backend
+  - Other repo names: grocery_frontend_customer, grocery_frontend_store,
+    grocery_frontend_rider, grocery_frontend_admin
+  Swap the placeholder links below to match your actual GitHub URLs.
+-->
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+# Fresh Grocery — Backend API
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+NestJS + TypeORM + PostgreSQL backend powering the Fresh Grocery platform: customer ordering, store/inventory management, rider delivery, and admin oversight.
 
-## Description
+## Related repositories
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| App | Description |
+|---|---|
+| [grocery_frontend_customer](../../../grocery_frontend_customer) | Customer-facing shopping app (Flutter) |
+| [grocery_frontend_store](../../../grocery_frontend_store) | Store/partner management app (Flutter) |
+| [grocery_frontend_rider](../../../grocery_frontend_rider) | Rider delivery app (Flutter) |
+| [grocery_frontend_admin](../../../grocery_frontend_admin) | Admin console (Flutter) |
 
-## Project setup
+## Features
 
-```bash
-$ npm install
-```
+- **Auth**: JWT-based login/register, role-based access (customer, store owner, rider, admin), email verification, admin approval flow for partners/riders, forgot/reset password, soft-delete on account removal
+- **Catalog & orders**: products, stores, cart, order lifecycle (accepted → preparing → ready → picked up → on the way → delivered/cancelled), stock management, promotional discounts
+- **Payments**: Stripe (PaymentIntent + webhook confirmation) and Cash on Delivery, admin-reconcilable payment records
+- **Delivery**: rider assignment, live location tracking, simulated road-route delivery (OSRM), order cancellation with automatic stock restoration
+- **Admin**: platform stats, user/role management, store and order oversight, promotions CRUD
+- **Notifications**: in-app notifications for order updates, approvals, and admin alerts
 
-## Compile and run the project
+## Tech stack
 
-```bash
-# development
-$ npm run start
+- NestJS (TypeScript)
+- TypeORM + PostgreSQL
+- Passport JWT
+- Stripe SDK
+- Nodemailer (via `@nestjs-modules/mailer`)
 
-# watch mode
-$ npm run start:dev
+## Getting started
 
-# production mode
-$ npm run start:prod
-```
+### Prerequisites
 
-## Run tests
+- Node.js 18+
+- PostgreSQL running locally or accessible remotely
+- A Stripe account (test/sandbox keys)
 
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Setup
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+git clone https://github.com/<your-username>/grocery-backend.git
+cd grocery-backend
+npm install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Environment variables
 
-## Resources
+Create a `.env` file in the project root:
 
-Check out a few resources that may come in handy when working with NestJS:
+```dotenv
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=your_db_password
+DB_NAME=grocery
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Auth
+JWT_SECRET=your_jwt_secret
 
-## Support
+# Stripe
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# Email (used for verification + password reset)
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
+```
 
-## Stay in touch
+Adjust the DB variable names above to match whatever `TypeOrmModule.forRoot(...)` config actually reads in your project.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Run
+
+```bash
+npm run start:dev
+```
+
+Server starts on `http://localhost:3000` by default.
+
+### Testing Stripe locally
+
+Install the [Stripe CLI](https://stripe.com/docs/stripe-cli), then:
+
+```bash
+stripe login
+stripe listen --forward-to localhost:3000/payments/webhook
+```
+
+Copy the printed `whsec_...` into `STRIPE_WEBHOOK_SECRET` and restart the server.
+
+## Project structure
+
+```
+src/
+├── auth/            # login, register, JWT strategy, guards
+├── users/            # user CRUD
+├── orders/           # order lifecycle, rider assignment, delivery simulation
+├── payments/         # Stripe + COD payment handling
+├── promotions/        # discount codes/campaigns
+├── admin/            # admin-only stats and management endpoints
+├── notifications/       # in-app notifications
+└── common/           # shared enums, decorators, guards
+```
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Private project — not licensed for redistribution.
