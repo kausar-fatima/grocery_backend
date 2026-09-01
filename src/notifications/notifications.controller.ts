@@ -1,19 +1,22 @@
 import {
+    Body,
     Controller,
     Delete,
     Get,
     Param,
     Patch,
+    Post,
     UseGuards,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { RegisterDeviceTokenDto } from './dto/register-device-token.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
-    constructor(private readonly service: NotificationsService) {}
+    constructor(private readonly service: NotificationsService) { }
 
     @Get()
     forUser(@CurrentUser('sub') userId: number) {
@@ -23,6 +26,14 @@ export class NotificationsController {
     @Get('unread')
     unread(@CurrentUser('sub') userId: number) {
         return this.service.unread(userId);
+    }
+
+    @Post('device-token')
+    registerDeviceToken(
+        @CurrentUser('sub') userId: number,
+        @Body() dto: RegisterDeviceTokenDto,
+    ) {
+        return this.service.registerDeviceToken(userId, dto.token, dto.platform);
     }
 
     @Patch('read-all')

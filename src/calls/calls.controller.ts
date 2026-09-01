@@ -15,7 +15,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 @UseGuards(JwtAuthGuard)
 @Controller('calls')
 export class CallsController {
-    constructor(private readonly callsService: CallsService) {}
+    constructor(private readonly callsService: CallsService) { }
 
     @Post()
     initiate(
@@ -41,8 +41,8 @@ export class CallsController {
     }
 
     @Patch(':id/answer')
-    answer(@Param('id') id: string) {
-        return this.callsService.answer(+id);
+    answer(@Param('id') id: string, @CurrentUser('sub') userId: number) {
+        return this.callsService.answer(+id, userId);
     }
 
     @Patch(':id/decline')

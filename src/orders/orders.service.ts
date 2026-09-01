@@ -449,32 +449,64 @@ export class OrdersService {
     }
 
     async assignRider(orderId: number, riderId: number) {
-        const order = await this.orderRepository.findOne({
-            where: { id: orderId },
-        });
-        if (!order) throw new NotFoundException('Order not found');
-        if (order.riderId && order.riderId !== riderId) {
-            throw new BadRequestException('Order already assigned to a rider');
-        }
-        order.riderId = riderId;
-        order.status = OrderStatus.PICKED_UP;
-        await this.orderRepository.save(order);
-        const full = await this.findOne(orderId);
-        if (full?.user?.id) {
-            await this.notifications.create(full.user.id, {
-                title: 'A rider is on the way 🛵',
-                body: `${full.rider?.username ?? 'A rider'} has picked up your order #${orderId}.`,
+        return this.dataSource.transaction(async (manager) => {
+            // Atomically claim the order.
+            const result = await manager
+                .createQueryBuilder()
+                .update(Order)
+                .set({
+                    riderId,
+                    status: OrderStatus.PICKED_UP,
+                })
+                .where('id = :orderId', { orderId })
+                .andWhere('riderId IS NULL')
+                .andWhere('status = :status', {
+                    status: OrderStatus.READY,
+                })
+                .execute();
+
+            // Nobody got the order, or it was no longer available.
+            if (result.affected !== 1) {
+                throw new BadRequestException(
+                    'Order is no longer available for pickup.',
+                );
+            }
+
+            // Fetch the newly assigned order.
+            const full = await manager.findOne(Order, {
+                where: { id: orderId },
+                relations: [
+                    'user',
+                    'items',
+                    'items.product',
+                    'rider',
+                ],
+            });
+
+            if (!full) {
+                throw new NotFoundException('Order not found');
+            }
+
+            // Notify customer.
+            if (full.user?.id) {
+                await this.notifications.create(full.user.id, {
+                    title: 'A rider is on the way 🛵',
+                    body: `A rider has picked up your order #${orderId}.`,
+                    type: 'rider',
+                    orderId,
+                });
+            }
+
+            // Notify rider.
+            await this.notifications.create(riderId, {
+                title: 'Delivery assigned',
+                body: `You accepted order #${orderId}. Head to the store for pickup.`,
                 type: 'rider',
                 orderId,
             });
-        }
-        await this.notifications.create(riderId, {
-            title: 'Delivery assigned',
-            body: `You accepted order #${orderId}. Head to the store for pickup.`,
-            type: 'rider',
-            orderId,
+
+            return full;
         });
-        return full;
     }
 
     async updateLocation(orderId: number, lat: number, lng: number) {

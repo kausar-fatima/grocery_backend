@@ -33,6 +33,9 @@ export class Call {
     @Column({ type: 'int', nullable: true })
     orderId!: number | null;
 
+    @Column({ unique: true })
+    channelName!: string;
+
     @Column({
         type: 'enum',
         enum: CallStatus,

@@ -20,6 +20,8 @@ import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { PromotionsModule } from './promotions/promotions.module';
+import { FirebaseController } from './firebase/firebase.controller';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
@@ -36,8 +38,8 @@ import { PromotionsModule } from './promotions/promotions.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    UsersModule, AuthModule, StoresModule, CategoriesModule, ProductsModule, CartModule, OrdersModule, PaymentsModule, CartItemsModule, OrderItemsModule, ReviewsModule, MessagesModule, CallsModule, AdminModule, NotificationsModule, AddressesModule, PromotionsModule],
-  controllers: [AppController],
+    UsersModule, AuthModule, StoresModule, CategoriesModule, ProductsModule, CartModule, OrdersModule, PaymentsModule, CartItemsModule, OrderItemsModule, ReviewsModule, MessagesModule, CallsModule, AdminModule, NotificationsModule, AddressesModule, PromotionsModule, FirebaseModule],
+  controllers: [AppController, FirebaseController],
   providers: [AppService],
 })
 export class AppModule {}
